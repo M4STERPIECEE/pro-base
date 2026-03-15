@@ -35,7 +35,6 @@ jobs:
 
 
   deploy:
-    if: ${{ secrets.SERVER_HOST != '' && secrets.SERVER_USER != '' && secrets.SSH_PRIVATE_KEY != '' }}
     needs: build-and-push
     runs-on: ubuntu-latest
     env:
@@ -43,14 +42,21 @@ jobs:
       SERVER_USER: ${{ secrets.SERVER_USER }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
     steps:
-      - name: Verify SSH secrets
+      - name: Check SSH secrets availability
+        id: ssh_check
         run: |
-          if [ -z "${SERVER_HOST}" ] || [ -z "${SERVER_USER}" ] || [ -z "${SSH_PRIVATE_KEY}" ]; then
-            echo "Missing SERVER_HOST, SERVER_USER or SSH_PRIVATE_KEY repository secrets."
-            exit 1
+          if [ -n "${SERVER_HOST}" ] && [ -n "${SERVER_USER}" ] && [ -n "${SSH_PRIVATE_KEY}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Skip deploy (missing SSH secrets)
+        if: ${{ steps.ssh_check.outputs.enabled != 'true' }}
+        run: echo "SSH secrets are missing. Skipping deploy job."
+
       - name: Deploy via SSH
+        if: ${{ steps.ssh_check.outputs.enabled == 'true' }}
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ env.SERVER_HOST }}
@@ -60,3 +66,4 @@ jobs:
             cd /opt/bda-notes
             docker compose pull
             docker compose up -d --remove-orphans
+
