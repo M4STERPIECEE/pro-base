@@ -33,12 +33,6 @@ jobs:
           push: true
           tags: ${{ env.DOCKER_USERNAME }}/bda-backend:latest
 
-      - name: Build & push frontend
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          push: true
-          tags: ${{ env.DOCKER_USERNAME }}/bda-frontend:latest
 
   deploy:
     needs: build-and-push
