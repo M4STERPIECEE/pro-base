@@ -1,12 +1,80 @@
 package com.bda.bda.service;
 
 import com.bda.bda.dto.request.GradeRequest;
-import com.bda.bda.exception.GradeInvalidException;
+import com.bda.bda.dto.response.GradeResponse;
+import com.bda.bda.exception.ResourceNotFoundException;
 import com.bda.bda.model.Grade;
+import com.bda.bda.model.GradeId;
+import com.bda.bda.model.Student;
+import com.bda.bda.model.Subject;
 import com.bda.bda.repository.GradeRepository;
+import com.bda.bda.repository.StudentRepository;
+import com.bda.bda.repository.SubjectRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class GradeService {
+    private final GradeRepository gradeRepository;
+    private final StudentRepository studentRepository;
+    private final SubjectRepository subjectRepository;
 
+    public List<GradeResponse> findAll() {
+        return gradeRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
+    }
+
+    public List<GradeResponse> findByStudent(Integer studentId) {
+        return gradeRepository.findAll().stream()
+                .filter(grade -> grade.getId() != null && studentId.equals(grade.getId().getStudentId()))
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    public GradeResponse findById(Integer studentId, Integer subjectId) {
+        return toResponse(getOrThrow(studentId, subjectId));
+    }
+
+    @Transactional
+    public GradeResponse create(GradeRequest request) {
+        Student student = studentRepository.findById(request.getStudentId().longValue())
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found with: " + request.getStudentId()));
+        Subject subject = subjectRepository.findById(request.getSubjectId().longValue())
+                .orElseThrow(() -> new ResourceNotFoundException("Subject not found with: " + request.getSubjectId()));
+
+        GradeId id = new GradeId(student.getStudentId(), subject.getSubjectId());
+        if (gradeRepository.existsById(id)) {
+            throw new IllegalStateException("grade already exists for student " + request.getStudentId() + " and subject " + request.getSubjectId() + "use PUT to update");
+        }
+
+        Grade grade = Grade.builder().id(id).student(student).subject(subject).value(request.getValue()).build();
+        return toResponse(gradeRepository.save(grade));
+    }
+
+    @Transactional
+    public GradeResponse update(Integer studentId, Integer subjectId, GradeRequest request) {
+        Grade grade = getOrThrow(studentId, subjectId);
+        grade.setValue(request.getValue());
+        return toResponse(gradeRepository.save(grade));
+    }
+
+    @Transactional
+    public void delete(Integer studentId, Integer subjectId) {
+        Grade grade = getOrThrow(studentId, subjectId);
+        gradeRepository.delete(grade);
+    }
+
+    private Grade getOrThrow(Integer studentId, Integer subjectId) {
+        GradeId id = new GradeId(studentId, subjectId);
+        return gradeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Grade not found for student " + studentId + " and subject " + subjectId));
+    }
+
+    public GradeResponse toResponse(Grade grade) {
+        return GradeResponse.builder().studentId(grade.getStudent() != null ? grade.getStudent().getStudentId() : grade.getId().getStudentId()).studentName(grade.getStudent() != null ? grade.getStudent().getFullName() : null).subjectId(grade.getSubject() != null ? grade.getSubject().getSubjectId() : grade.getId().getSubjectId()).subjectLabel(grade.getSubject() != null ? grade.getSubject().getLabel() : null).value(grade.getValue()).build();
+    }
 }
