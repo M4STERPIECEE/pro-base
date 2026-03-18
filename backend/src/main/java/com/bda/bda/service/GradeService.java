@@ -41,14 +41,11 @@ public class GradeService {
 
     @Transactional
     public GradeResponse create(GradeRequest request) {
-        Student student = studentRepository.findById(request.getStudentId().longValue())
-                .orElseThrow(() -> new ResourceNotFoundException("Student not found with: " + request.getStudentId()));
-        Subject subject = subjectRepository.findById(request.getSubjectId().longValue())
-                .orElseThrow(() -> new ResourceNotFoundException("Subject not found with: " + request.getSubjectId()));
-
+        Student student = studentRepository.findById(request.getStudentId()).orElseThrow(() -> new ResourceNotFoundException("Student not found with: " + request.getStudentId()));
+        Subject subject = subjectRepository.findById(request.getSubjectId()).orElseThrow(() -> new ResourceNotFoundException("Subject not found with: " + request.getSubjectId()));
         GradeId id = new GradeId(student.getStudentId(), subject.getSubjectId());
         if (gradeRepository.existsById(id)) {
-            throw new IllegalStateException("grade already exists for student " + request.getStudentId() + " and subject " + request.getSubjectId() + "use PUT to update");
+            throw new IllegalStateException("Grade already exists for student " + request.getStudentId() + " and subject " + request.getSubjectId() + ". Use PUT to update.");
         }
 
         Grade grade = Grade.builder().id(id).student(student).subject(subject).value(request.getValue()).build();
