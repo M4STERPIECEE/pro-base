@@ -7,7 +7,6 @@ import com.bda.bda.repository.AuditGradeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,9 +17,7 @@ public class AuditService {
     private final AuditGradeRepository auditGradeRepository;
 
     public List<AuditResponse> findAll() {
-        return auditGradeRepository.findAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return auditGradeRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<AuditResponse> findByStudent(Integer studentId) {
@@ -34,25 +31,10 @@ public class AuditService {
         long inserts = auditGradeRepository.findAll().stream().filter(a -> "INSERT".equalsIgnoreCase(a.getOperationType())).count();
         long updates = auditGradeRepository.findAll().stream().filter(a -> "UPDATE".equalsIgnoreCase(a.getOperationType())).count();
         long deletes = auditGradeRepository.findAll().stream().filter(a -> "DELETE".equalsIgnoreCase(a.getOperationType())).count();
-        return AuditStatsResponse.builder()
-                .insertCount(inserts)
-                .updateCount(updates)
-                .deleteCount(deletes)
-                .totalCount(inserts + updates + deletes)
-                .build();
+        return AuditStatsResponse.builder().insertCount(inserts).updateCount(updates).deleteCount(deletes).totalCount(inserts + updates + deletes).build();
     }
 
     private AuditResponse toResponse(AuditGrade audit) {
-        return AuditResponse.builder()
-                .auditId(audit.getAuditId())
-                .operationType(audit.getOperationType())
-                .updatedAt(audit.getUpdatedAt())
-                .studentId(audit.getStudentId())
-                .studentName(audit.getStudentName())
-                .subjectLabel(audit.getSubjectLabel())
-                .oldValue(audit.getOldValue())
-                .newValue(audit.getNewValue())
-                .dbUser(audit.getDbUser())
-                .build();
+        return AuditResponse.builder().auditId(audit.getAuditId()).operationType(audit.getOperationType()).updatedAt(audit.getUpdatedAt()).studentId(audit.getStudentId()).studentName(audit.getStudentName()).subjectLabel(audit.getSubjectLabel()).oldValue(audit.getOldValue()).newValue(audit.getNewValue()).dbUser(audit.getDbUser()).build();
     }
 }
