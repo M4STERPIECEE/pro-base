@@ -1,3 +1,6 @@
+-- language=SQL
+-- PostgreSQL / PLpgSQL trigger functions
+
 CREATE OR REPLACE FUNCTION fn_recalculate_average()
 RETURNS TRIGGER AS $$
 DECLARE
