@@ -1,99 +1,108 @@
--- language=SQL
--- PostgreSQL / PLpgSQL trigger functions
-
 CREATE OR REPLACE FUNCTION fn_recalculate_average()
-RETURNS TRIGGER AS $$
+    RETURNS TRIGGER AS $$
 DECLARE
-v_student_id INTEGER;
+    v_student_id INTEGER;
 BEGIN
     v_student_id := COALESCE(NEW.student_id, OLD.student_id);
 
-UPDATE student
-SET average = (
-    SELECT COALESCE(
-                   SUM(g.value * s.coefficient) / NULLIF(SUM(s.coefficient), 0),
-                   0
-           )
-    FROM  grade   g
-              JOIN  subject s ON s.subject_id = g.subject_id
-    WHERE g.student_id = v_student_id
-)
-WHERE student_id = v_student_id;
+    UPDATE student
+    SET average = (
+        SELECT COALESCE(
+                       SUM(g.value * s.coefficient) / NULLIF(SUM(s.coefficient), 0),
+                       0
+               )
+        FROM  grade   g
+                  JOIN  subject s ON s.subject_id = g.subject_id
+        WHERE g.student_id = v_student_id
+    )
+    WHERE student_id = v_student_id;
 
-RETURN NULL;
+    RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_recalculate_average
     AFTER INSERT OR UPDATE OR DELETE ON grade
     FOR EACH ROW
-    EXECUTE FUNCTION fn_recalculate_average();
+EXECUTE FUNCTION fn_recalculate_average();
 
 CREATE OR REPLACE FUNCTION fn_audit_grade()
-RETURNS TRIGGER AS $$
+    RETURNS TRIGGER AS $$
 DECLARE
-v_student_name  VARCHAR(100);
+    v_student_name  VARCHAR(100);
     v_subject_label VARCHAR(100);
+    v_app_user      VARCHAR(100);
 BEGIN
+    BEGIN
+        v_app_user := current_setting('app.current_user');
+    EXCEPTION WHEN OTHERS THEN
+        v_app_user := CURRENT_USER;
+    END;
+
+    IF v_app_user IS NULL OR v_app_user = '' THEN
+        v_app_user := CURRENT_USER;
+    END IF;
 
     IF TG_OP = 'INSERT' THEN
 
-SELECT st.full_name, sb.label
-INTO   v_student_name, v_subject_label
-FROM   student st
-           JOIN   subject sb ON sb.subject_id = NEW.subject_id
-WHERE  st.student_id = NEW.student_id;
+        SELECT st.full_name, sb.label
+        INTO   v_student_name, v_subject_label
+        FROM   student st
+                   JOIN   subject sb ON sb.subject_id = NEW.subject_id
+        WHERE  st.student_id = NEW.student_id;
 
-INSERT INTO grade_audit (
-    operation_type, student_id, student_name,
-    subject_label,  old_value,  new_value
-)
-VALUES (
-           'INSERT', NEW.student_id, v_student_name,
-           v_subject_label, NULL, NEW.value
-       );
+        INSERT INTO grade_audit (
+            operation_type, student_id, student_name,
+            subject_label,  old_value,  new_value,  db_user
+        ) VALUES (
+                     'INSERT', NEW.student_id, v_student_name,
+                     v_subject_label, NULL, NEW.value, v_app_user
+                 );
 
-ELSIF TG_OP = 'UPDATE' THEN
+    ELSIF TG_OP = 'UPDATE' THEN
 
-SELECT st.full_name, sb.label
-INTO   v_student_name, v_subject_label
-FROM   student st
-           JOIN   subject sb ON sb.subject_id = NEW.subject_id
-WHERE  st.student_id = NEW.student_id;
+        SELECT st.full_name, sb.label
+        INTO   v_student_name, v_subject_label
+        FROM   student st
+                   JOIN   subject sb ON sb.subject_id = NEW.subject_id
+        WHERE  st.student_id = NEW.student_id;
 
-INSERT INTO grade_audit (
-    operation_type, student_id, student_name,
-    subject_label,  old_value,  new_value
-)
-VALUES (
-           'UPDATE', NEW.student_id, v_student_name,
-           v_subject_label, OLD.value, NEW.value
-       );
+        INSERT INTO grade_audit (
+            operation_type, student_id, student_name,
+            subject_label,  old_value,  new_value,  db_user
+        ) VALUES (
+                     'UPDATE', NEW.student_id, v_student_name,
+                     v_subject_label, OLD.value, NEW.value, v_app_user
+                 );
 
-ELSIF TG_OP = 'DELETE' THEN
+    ELSIF TG_OP = 'DELETE' THEN
 
-SELECT st.full_name, sb.label
-INTO   v_student_name, v_subject_label
-FROM   student st
-           JOIN   subject sb ON sb.subject_id = OLD.subject_id
-WHERE  st.student_id = OLD.student_id;
+        SELECT st.full_name, COALESCE(sb.label, 'DELETED')
+        INTO   v_student_name, v_subject_label
+        FROM   student st
+                   LEFT JOIN subject sb ON sb.subject_id = OLD.subject_id
+        WHERE  st.student_id = OLD.student_id;
 
-INSERT INTO grade_audit (
-    operation_type, student_id, student_name,
-    subject_label,  old_value,  new_value
-)
-VALUES (
-           'DELETE', OLD.student_id, v_student_name,
-           v_subject_label, OLD.value, NULL
-       );
+        INSERT INTO grade_audit (
+            operation_type, student_id, student_name,
+            subject_label,  old_value,  new_value,  db_user
+        ) VALUES (
+                     'DELETE', OLD.student_id, v_student_name,
+                     v_subject_label, OLD.value, NULL, v_app_user
+                 );
 
-END IF;
+    END IF;
 
-RETURN NULL;
+    RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_audit_grade
-    AFTER INSERT OR UPDATE OR DELETE ON grade
+CREATE TRIGGER trg_audit_grade_write
+    AFTER INSERT OR UPDATE ON grade
     FOR EACH ROW
-    EXECUTE FUNCTION fn_audit_grade();
+EXECUTE FUNCTION fn_audit_grade();
+
+CREATE TRIGGER trg_audit_grade_delete
+    BEFORE DELETE ON grade
+    FOR EACH ROW
+EXECUTE FUNCTION fn_audit_grade();
