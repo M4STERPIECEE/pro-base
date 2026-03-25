@@ -1,10 +1,8 @@
-# BDA
+Projet pour gérer des **étudiants**/**notes**/**journal d’audit**
 
-Projet BDA pour gérer des **étudiants**/**notes**/**journal d’audit**
+## Architecture
 
-## Architecture du projet
-
-Le backend suit une architecture simple en couches :
+Backend suit une architecture simple en couches :
 
 - **Controller** 
 - **Service**
@@ -25,25 +23,25 @@ Le backend suit une architecture simple en couches :
 
 - Docker et Docker Compose
 - ou, pour un lancement local :
-  - Java 25
+  - Java
   - PostgreSQL
 
 ## Lancer le projet avec Docker
 
-Depuis la racine du dépôt :
+Depuis racine du dépôt :
 
 ```bash
 docker compose up --build
 ```
 
-Le fichier `docker-compose.yaml` démarre :
+Fichier `docker-compose.yaml` démarre :
 
 - PostgreSQL sur `localhost:5432`
 - le backend sur `localhost:8080`
 
-## Lancer le backend en local
+## Lancer Backend en local
 
-Depuis le dossier `backend/` :
+Depuis dossier `backend/` :
 
 ```bash
 ./gradlew bootRun
@@ -55,19 +53,7 @@ Par défaut, l’app utilise :
 - Swagger UI : `http://localhost:8080/api/swagger-ui.html`
 - OpenAPI JSON/YAML : `http://localhost:8080/api/v3/api-docs`
 
-## Base de données
-
-Migrations SQL se trouvent dans :
-
-- `backend/src/main/resources/db/migration/v1_schema.sql`
-- `backend/src/main/resources/db/migration/v2_triggers.sql`
-
-Elles créent les tables principales et les triggers pour :
-
-- recalculer la moyenne d’un étudiant
-- enregistrer les opérations sur les notes dans l’audit
-
-## Structure rapide
+## Structure global
 
 ```text
 BDA/
@@ -78,10 +64,11 @@ BDA/
 │   └── src/main/
 │       ├── java/com/bda/bda/
 │       └── resources/
+├── frontend/
 └── README.md
 ```
 
 ## Remarque
 
-L’API est documentée via Swagger/OpenAPI et versionnée en `v1`.
+API documentée via Swagger/OpenAPI
 
