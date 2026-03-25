@@ -9,3 +9,4 @@ import { Component, signal } from '@angular/core';
 export class AppComponent {
   protected readonly title = signal('frontend');
 }
+
