@@ -476,7 +476,7 @@ components:
   schemas:
     LoginRequest:
       type: object
-      required: [username, password]
+      required: [username, password, role]
       properties:
         username:
           type: string
@@ -485,6 +485,10 @@ components:
         password:
           type: string
           example: user123
+        role:
+          type: string
+          enum: [ADMIN, ETUDIANT]
+          example: ETUDIANT
 
     AuthResponse:
       type: object
@@ -497,8 +501,8 @@ components:
           example: user1
         role:
           type: string
-          enum: [ADMIN, USER]
-          example: USER
+          enum: [ADMIN, ETUDIANT]
+          example: ETUDIANT
 
     StudentRequest:
       type: object

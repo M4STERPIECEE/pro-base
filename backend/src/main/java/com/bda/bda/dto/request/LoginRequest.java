@@ -1,11 +1,16 @@
 package com.bda.bda.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 public record LoginRequest(
         @NotBlank(message = "Username is required")
         String username,
 
         @NotBlank(message = "Password is required")
-        String password
+        String password,
+
+        @NotBlank(message = "Role is required")
+        @Pattern(regexp = "ADMIN|ETUDIANT", message = "Role must be ADMIN or ETUDIANT")
+        String role
 ) {}

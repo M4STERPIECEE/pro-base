@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -48,10 +49,23 @@ public class AuthController {
                 .findFirst()
                 .map(GrantedAuthority::getAuthority)
                 .map(authority -> authority.replace("ROLE_", ""))
-                .orElse("USER");
+                .map(this::toBusinessRole)
+                .orElse("ETUDIANT");
+
+        String requestedRole = request.role().toUpperCase();
+        if (!role.equals(requestedRole)) {
+            throw new BadCredentialsException("Invalid username, password, or role");
+        }
 
         String token = jwtUtils.generateToken(userDetails);
         return ResponseEntity.ok(new AuthResponse(token, userDetails.getUsername(), role));
+    }
+
+    private String toBusinessRole(String role) {
+        if ("USER".equalsIgnoreCase(role)) {
+            return "ETUDIANT";
+        }
+        return role.toUpperCase();
     }
 }
 
