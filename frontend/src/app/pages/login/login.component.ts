@@ -1,7 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, ElementRef, HostListener, inject } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-
 import { AuthService } from '../../services/auth.service';
 import { AuthResponse, UserRole } from '../../models/auth.model';
 
@@ -15,6 +14,7 @@ export class LoginComponent {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly elementRef = inject(ElementRef<HTMLElement>);
 
   readonly loginForm = this.fb.nonNullable.group({
     username: ['', [Validators.required]],
@@ -25,17 +25,50 @@ export class LoginComponent {
   showError = false;
   isLoading = false;
   errorMessage = '';
+  showPassword = false;
+  isRoleDropdownOpen = false;
+
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
+  }
+
+  toggleRoleDropdown(): void {
+    this.isRoleDropdownOpen = !this.isRoleDropdownOpen;
+  }
+
+  closeRoleDropdown(): void {
+    this.isRoleDropdownOpen = false;
+  }
+
+  selectRole(role: UserRole): void {
+    this.loginForm.controls.role.setValue(role);
+    this.closeRoleDropdown();
+  }
+
+  get selectedRoleLabel(): string {
+    return this.loginForm.controls.role.value === 'ADMIN' ? 'Admin' : 'Student';
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.isRoleDropdownOpen) {
+      return;
+    }
+
+    const target = event.target as Node | null;
+    if (target && !this.elementRef.nativeElement.contains(target)) {
+      this.closeRoleDropdown();
+    }
+  }
 
   onSubmit(): void {
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
     }
-
     this.showError = false;
     this.errorMessage = '';
     this.isLoading = true;
-
     this.authService.login(this.loginForm.getRawValue()).subscribe({
       next: (response) => this.redirectByRole(response),
       error: () => {
