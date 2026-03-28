@@ -20,12 +20,28 @@
         </div>
         <div class="field-block">
           <label for="password">Mot de passe</label>
-          <input id="password" type="password" formControlName="password" placeholder="••••••••" class="input-editorial"/>
+          <div class="password-field">
+            <input
+              id="password"
+              [type]="showPassword ? 'text' : 'password'"
+              formControlName="password"
+              placeholder="••••••••"
+              class="input-editorial"
+            />
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="togglePasswordVisibility()"
+              [attr.aria-label]="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+            >
+              <span class="material-symbols-outlined">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
+            </button>
+          </div>
         </div>
         <div class="field-block">
           <label for="role">Role</label>
           <select id="role" formControlName="role" class="input-editorial">
-            <option value="ETUDIANT">Etudiant</option>
+            <option value="ETUDIANT">Student</option>
             <option value="ADMIN">Admin</option>
           </select>
         </div>

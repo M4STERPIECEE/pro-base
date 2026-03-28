@@ -130,6 +130,40 @@ h1 {
   background: #ffffff;
 }
 
+.password-field {
+  position: relative;
+}
+
+.password-field .input-editorial {
+  padding-right: 48px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: #515f74;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle:hover {
+  background: rgba(0, 74, 198, 0.08);
+}
+
+.password-toggle:focus-visible {
+  outline: 2px solid #004ac6;
+  outline-offset: 2px;
+}
+
 select.input-editorial {
   appearance: none;
   cursor: pointer;

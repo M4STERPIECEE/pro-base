@@ -1,7 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-
 import { AuthService } from '../../services/auth.service';
 import { AuthResponse, UserRole } from '../../models/auth.model';
 
@@ -25,17 +24,20 @@ export class LoginComponent {
   showError = false;
   isLoading = false;
   errorMessage = '';
+  showPassword = false;
+
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
+  }
 
   onSubmit(): void {
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
     }
-
     this.showError = false;
     this.errorMessage = '';
     this.isLoading = true;
-
     this.authService.login(this.loginForm.getRawValue()).subscribe({
       next: (response) => this.redirectByRole(response),
       error: () => {
@@ -53,6 +55,6 @@ export class LoginComponent {
       this.router.navigate(['/admin']);
       return;
     }
-    this.router.navigate(['/etudiant']);
+    this.router.navigate(['/student']);
   }
 }
