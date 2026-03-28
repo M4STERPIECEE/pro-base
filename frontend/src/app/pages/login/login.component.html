@@ -1,9 +1,6 @@
 <div class="login-page">
   <main class="login-main">
     <div class="brand-header">
-      <div class="brand-icon-box">
-        <span class="material-symbols-outlined brand-icon">history_edu</span>
-      </div>
       <h1>Se connecter a BDA Notes</h1>
     </div>
     <section class="glass-panel login-card">
@@ -21,29 +18,30 @@
         <div class="field-block">
           <label for="password">Mot de passe</label>
           <div class="password-field">
-            <input
-              id="password"
-              [type]="showPassword ? 'text' : 'password'"
-              formControlName="password"
-              placeholder="••••••••"
-              class="input-editorial"
-            />
-            <button
-              type="button"
-              class="password-toggle"
-              (click)="togglePasswordVisibility()"
-              [attr.aria-label]="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
-            >
+            <input id="password" [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="••••••••" class="input-editorial"/>
+            <button type="button" class="password-toggle" (click)="togglePasswordVisibility()" [attr.aria-label]="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'">
               <span class="material-symbols-outlined">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
             </button>
           </div>
         </div>
         <div class="field-block">
-          <label for="role">Role</label>
-          <select id="role" formControlName="role" class="input-editorial">
-            <option value="ETUDIANT">Student</option>
-            <option value="ADMIN">Admin</option>
-          </select>
+          <label id="role-label">Role</label>
+          <div class="custom-dropdown">
+            <button id="role-trigger" type="button" class="input-editorial dropdown-trigger" (click)="toggleRoleDropdown()" [attr.aria-expanded]="isRoleDropdownOpen" aria-haspopup="listbox" aria-labelledby="role-label role-trigger" >
+              <span>{{ selectedRoleLabel }}</span>
+              <span class="material-symbols-outlined" [class.rotated]="isRoleDropdownOpen">expand_more</span>
+            </button>
+            @if (isRoleDropdownOpen) {
+              <div class="dropdown-panel" role="listbox" aria-labelledby="role-label">
+                <button type="button" class="dropdown-option" [class.active]="loginForm.controls.role.value === 'ETUDIANT'" (click)="selectRole('ETUDIANT')">
+                  Student
+                </button>
+                <button type="button" class="dropdown-option" [class.active]="loginForm.controls.role.value === 'ADMIN'" (click)="selectRole('ADMIN')" >
+                  Admin
+                </button>
+              </div>
+            }
+          </div>
         </div>
         <button type="submit" class="primary-gradient-btn submit-btn" [disabled]="isLoading">
           @if (isLoading) {
@@ -55,7 +53,7 @@
       <div class="login-footer">
         <button type="button" class="forgot-btn">Mot de passe oublie ?</button>
         <div class="footer-divider"></div>
-        <p>Acces reserve au personnel administratif de l'institution.</p>
+        <p>Acces reserve au personnel administratif de l'institution</p>
       </div>
     </section>
   </main>

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, ElementRef, HostListener, inject } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -14,6 +14,7 @@ export class LoginComponent {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly elementRef = inject(ElementRef<HTMLElement>);
 
   readonly loginForm = this.fb.nonNullable.group({
     username: ['', [Validators.required]],
@@ -25,9 +26,39 @@ export class LoginComponent {
   isLoading = false;
   errorMessage = '';
   showPassword = false;
+  isRoleDropdownOpen = false;
 
   togglePasswordVisibility(): void {
     this.showPassword = !this.showPassword;
+  }
+
+  toggleRoleDropdown(): void {
+    this.isRoleDropdownOpen = !this.isRoleDropdownOpen;
+  }
+
+  closeRoleDropdown(): void {
+    this.isRoleDropdownOpen = false;
+  }
+
+  selectRole(role: UserRole): void {
+    this.loginForm.controls.role.setValue(role);
+    this.closeRoleDropdown();
+  }
+
+  get selectedRoleLabel(): string {
+    return this.loginForm.controls.role.value === 'ADMIN' ? 'Admin' : 'Student';
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.isRoleDropdownOpen) {
+      return;
+    }
+
+    const target = event.target as Node | null;
+    if (target && !this.elementRef.nativeElement.contains(target)) {
+      this.closeRoleDropdown();
+    }
   }
 
   onSubmit(): void {
@@ -55,6 +86,6 @@ export class LoginComponent {
       this.router.navigate(['/admin']);
       return;
     }
-    this.router.navigate(['/student']);
+    this.router.navigate(['/etudiant']);
   }
 }
