@@ -1,5 +1,12 @@
 :host {
   display: block;
+  height: 100vh;
+  overflow: hidden;
+  font-family: "Poppins", sans-serif;
+}
+
+:host * {
+  font-family: "Poppins", sans-serif !important;
 }
 
 
