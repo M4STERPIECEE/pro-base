@@ -6,5 +6,8 @@ export const API_ENDPOINTS = {
   auth: {
     login: `${API_BASE_URL}/${API_VERSION}/auth/login`,
   },
+  students: {
+    list: `${API_BASE_URL}/${API_VERSION}/students`,
+  },
 } as const;
 

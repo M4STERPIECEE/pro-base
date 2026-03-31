@@ -1,0 +1,13 @@
+:host {
+  display: block;
+}
+
+.students-page {
+  min-height: 100%;
+}
+
+.table-wrapper {
+  max-height: 58vh;
+  overflow: auto;
+}
+
