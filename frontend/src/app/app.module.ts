@@ -3,7 +3,6 @@ import { BrowserModule } from '@angular/platform-browser';
 import { HttpClientModule } from '@angular/common/http';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-
 import { AppComponent } from './app.component';
 import { LoginComponent } from './pages/login/login.component';
 import { AdminComponent } from './pages/admin/admin.component';
@@ -11,6 +10,12 @@ import { EtudiantComponent } from './pages/etudiant/etudiant.component';
 import { EtudiantSidebarComponent } from './pages/etudiant/components/etudiant-sidebar/etudiant-sidebar.component';
 import { EtudiantTopbarComponent } from './pages/etudiant/components/etudiant-topbar/etudiant-topbar.component';
 import { EtudiantDashboardContentComponent } from './pages/etudiant/components/etudiant-dashboard-content/etudiant-dashboard-content.component';
+import { EtudiantStudentsContentComponent } from './pages/etudiant/components/etudiant-students-content/etudiant-students-content.component';
+import { DashboardIconComponent } from './icons/dashboard-icon.component';
+import { EtudiantIconComponent } from './icons/etudiant-icon.component';
+import { MatieresIconComponent } from './icons/matieres-icon.component';
+import { NotesIconComponent } from './icons/notes-icon.component';
+import { AuditIconComponent } from './icons/audit-icon.component';
 import { routes } from './app.routes';
 
 @NgModule({
@@ -22,12 +27,18 @@ import { routes } from './app.routes';
     EtudiantSidebarComponent,
     EtudiantTopbarComponent,
     EtudiantDashboardContentComponent,
+    EtudiantStudentsContentComponent,
   ],
   imports: [
     BrowserModule,
     HttpClientModule,
     ReactiveFormsModule,
     RouterModule.forRoot(routes),
+    DashboardIconComponent,
+    EtudiantIconComponent,
+    MatieresIconComponent,
+    NotesIconComponent,
+    AuditIconComponent,
   ],
   bootstrap: [AppComponent],
 })
