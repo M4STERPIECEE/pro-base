@@ -61,7 +61,7 @@ export class EtudiantStudentsContentComponent implements OnInit, OnDestroy {
   readonly tableHeaders: TableHeader[] = [
     { label: 'ID étudiant' },
     { label: 'Nom complet' },
-    { label: 'Moyenne (/20)' },
+    { label: 'Moyenne (/20)', className: 'text-center' },
     { label: 'Actions', className: 'text-right' },
   ];
 
@@ -176,7 +176,8 @@ export class EtudiantStudentsContentComponent implements OnInit, OnDestroy {
   }
 
   get pages(): number[] {
-    return Array.from({ length: this.totalPages }, (_, index) => index);
+    const visiblePageCount = this.totalPages > 0 ? this.totalPages : (this.students.length > 0 ? 1 : 0);
+    return Array.from({ length: visiblePageCount }, (_, index) => index);
   }
 
   get kpiCards(): KpiCard[] {
@@ -223,12 +224,16 @@ export class EtudiantStudentsContentComponent implements OnInit, OnDestroy {
     this.studentService.getStudents(page, this.pageSize).subscribe({
       next: (response) => {
         this.students = response.content;
-        this.currentPage = response.number;
-        this.totalPages = response.totalPages;
+        this.currentPage = Number.isInteger(response.number) ? response.number : page;
+        const hasStudents = response.content.length > 0;
+        this.totalPages = Math.max(Number(response.totalPages ?? 0), hasStudents ? 1 : 0);
         this.writeStudentsCache(response.content);
         this.loading = false;
       },
       error: () => {
+        if (this.students.length > 0) {
+          this.totalPages = Math.max(this.totalPages, 1);
+        }
         if (this.students.length === 0) {
           this.errorMessage = 'Impossible de charger les etudiants.';
         }
