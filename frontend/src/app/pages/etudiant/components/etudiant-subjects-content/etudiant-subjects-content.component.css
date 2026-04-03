@@ -121,7 +121,7 @@
 }
 
 .kpi-blue {
-  background: linear-gradient(145deg, #eef0ff 0%, #e0e3ff 100%);
+  background: #ffffff;
   border: 1px solid rgba(91, 81, 248, 0.15);
   box-shadow: 0 4px 20px rgba(91, 81, 248, 0.08);
 }
@@ -130,7 +130,7 @@
 .kpi-blue .kpi-glow  { background: radial-gradient(circle at top right, rgba(91, 81, 248, 0.12), transparent 60%); }
 
 .kpi-violet {
-  background: linear-gradient(145deg, #f3eeff 0%, #ead8ff 100%);
+  background: #ffffff;
   border: 1px solid rgba(139, 92, 246, 0.15);
   box-shadow: 0 4px 20px rgba(139, 92, 246, 0.08);
 }
@@ -139,7 +139,7 @@
 .kpi-violet .kpi-glow  { background: radial-gradient(circle at top right, rgba(139, 92, 246, 0.12), transparent 60%); }
 
 .kpi-red {
-  background: linear-gradient(145deg, #fff1f1 0%, #ffe2e2 100%);
+  background: #ffffff;
   border: 1px solid rgba(220, 38, 38, 0.15);
   box-shadow: 0 4px 20px rgba(220, 38, 38, 0.07);
 }

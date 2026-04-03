@@ -27,7 +27,6 @@
       <div class="kpi-glow"></div>
     </div>
   </div>
-
   <section class="table-card">
     <div class="table-toolbar">
       <p class="toolbar-title">Liste des matières</p>
@@ -45,7 +44,6 @@
         </button>
       </div>
     </div>
-
     <div class="table-wrapper">
       <table class="data-table">
         <thead>
@@ -53,7 +51,6 @@
             <th *ngFor="let header of tableHeaders" [ngClass]="header.className">{{ header.label }}</th>
           </tr>
         </thead>
-
         <tbody *ngIf="!loading && !errorMessage">
           <tr *ngFor="let subject of subjects; let i = index" class="data-row" [style.animation-delay]="i * 40 + 'ms'">
             <td>
@@ -76,7 +73,6 @@
             </td>
           </tr>
         </tbody>
-
         <tbody *ngIf="loading">
           <tr>
             <td class="state-cell" [attr.colspan]="tableHeaders.length">
@@ -87,7 +83,6 @@
             </td>
           </tr>
         </tbody>
-
         <tbody *ngIf="!loading && errorMessage">
           <tr>
             <td class="state-cell" [attr.colspan]="tableHeaders.length">
@@ -100,7 +95,6 @@
         </tbody>
       </table>
     </div>
-
     <div class="table-footer">
       <p class="footer-count">{{ subjects.length }} matière(s) affichée(s) sur {{ displayedTotalSubjects }} au total</p>
       <div class="pagination">
