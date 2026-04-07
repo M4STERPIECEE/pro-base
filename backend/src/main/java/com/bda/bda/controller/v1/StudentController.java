@@ -1,6 +1,7 @@
 package com.bda.bda.controller.v1;
 
 import com.bda.bda.dto.request.StudentRequest;
+import com.bda.bda.dto.response.PageResponse;
 import com.bda.bda.dto.response.StudentResponse;
 import com.bda.bda.dto.response.StudentStatsResponse;
 import com.bda.bda.service.StudentService;
@@ -12,7 +13,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -31,12 +31,14 @@ public class StudentController {
     @GetMapping
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Students returned", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = StudentResponse.class))))
     })
-    public ResponseEntity<Page<StudentResponse>> getAll(
+    public ResponseEntity<PageResponse<StudentResponse>> getAll(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size
     ) {
         int effectiveSize = size > 0 ? size : PAGE_SIZE;
-        return ResponseEntity.ok(studentService.findAll(PageRequest.of(page, effectiveSize, Sort.by(Sort.Direction.DESC, "studentId"))));
+        return ResponseEntity.ok(PageResponse.from(
+                studentService.findAll(PageRequest.of(page, effectiveSize, Sort.by(Sort.Direction.DESC, "studentId")))
+        ));
     }
 
     @GetMapping("/stats")

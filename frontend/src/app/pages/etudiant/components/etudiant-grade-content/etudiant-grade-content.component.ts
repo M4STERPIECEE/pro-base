@@ -1,10 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { Subject, forkJoin } from 'rxjs';
+import { finalize, takeUntil } from 'rxjs/operators';
 import { Grade } from '../../../../models/grade.model';
 import { Student } from '../../../../models/student.model';
-import { Subject } from '../../../../models/subject.model';
+import { Subject as SubjectModel } from '../../../../models/subject.model';
 import { GradeService } from '../../../../services/grade.service';
 import { StudentService } from '../../../../services/student.service';
 import { SubjectService } from '../../../../services/subject.service';
@@ -15,36 +16,34 @@ interface GradeFormValue {
   value: number;
 }
 
-interface PagedGradeResponse {
-  content: Grade[];
-  totalElements: number;
-  totalPages: number;
-  number: number;
-  size: number;
-}
-
 @Component({
   selector: 'app-etudiant-grade-content',
   standalone: false,
   templateUrl: './etudiant-grade-content.component.html',
   styleUrl: './etudiant-grade-content.component.css',
 })
-export class EtudiantGradeContentComponent implements OnInit {
+export class EtudiantGradeContentComponent implements OnInit, OnDestroy {
   readonly gradeForm;
-  readonly pageSize = 10;
+  readonly pageSize = 5;
+  readonly studentCodeYear = new Date().getFullYear();
 
   grades: Grade[] = [];
   students: Student[] = [];
-  subjects: Subject[] = [];
+  subjects: SubjectModel[] = [];
 
   loadingGrades = true;
   searchTerm = '';
   gradesErrorMessage = '';
+  refDataErrorMessage = '';
 
   isModalOpen = false;
   isSubmitting = false;
   modalErrorMessage = '';
+  successToastMessage = '';
   editingGrade: Grade | null = null;
+
+  isStudentDropdownOpen = false;
+  isSubjectDropdownOpen = false;
 
   totalStudents = 0;
   totalSubjects = 0;
@@ -54,19 +53,21 @@ export class EtudiantGradeContentComponent implements OnInit {
   totalPages = 0;
   totalElements = 0;
 
+  // ✅ FIX: Subject de destruction pour annuler tous les observables
+  private readonly destroy$ = new Subject<void>();
+  private toastTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
   constructor(
     private readonly formBuilder: FormBuilder,
     private readonly gradeService: GradeService,
     private readonly studentService: StudentService,
     private readonly subjectService: SubjectService,
+    private readonly cdr: ChangeDetectorRef,
   ) {
     this.gradeForm = this.formBuilder.nonNullable.group({
       studentId: [0, [Validators.required, Validators.min(1)]],
       subjectId: [0, [Validators.required, Validators.min(1)]],
-      value: [
-        0,
-        [Validators.required, Validators.min(0), Validators.max(20)],
-      ],
+      value: [0, [Validators.required, Validators.min(0), Validators.max(20)]],
     });
   }
 
@@ -74,34 +75,56 @@ export class EtudiantGradeContentComponent implements OnInit {
     this.loadInitialData();
   }
 
+  // ✅ FIX: Nettoyage propre à la destruction du composant
+  ngOnDestroy(): void {
+    if (this.toastTimeoutId) {
+      clearTimeout(this.toastTimeoutId);
+    }
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   get displayedGrades(): Grade[] {
     const term = this.searchTerm.trim().toLowerCase();
     if (!term) return this.grades;
 
-    return this.grades.filter((g) => {
-      return (
-        String(g.studentId).toLowerCase().includes(term) ||
-        (g.studentName ?? '').toLowerCase().includes(term) ||
-        String(g.subjectId).toLowerCase().includes(term) ||
-        (g.subjectLabel ?? '').toLowerCase().includes(term)
-      );
-    });
+    return this.grades.filter((g) =>
+      String(g.studentId).toLowerCase().includes(term) ||
+      this.formatStudentDisplayId(g.studentId).toLowerCase().includes(term) ||
+      (g.studentName ?? '').toLowerCase().includes(term) ||
+      String(g.subjectId).toLowerCase().includes(term) ||
+      this.formatSubjectDisplayId(g.subjectId).toLowerCase().includes(term) ||
+      (g.subjectLabel ?? '').toLowerCase().includes(term)
+    );
   }
 
   onSearchChange(value: string): void {
     this.searchTerm = value;
   }
 
+  getSubjectCoefficient(subjectId: number): string {
+    const expectedId = Number(subjectId);
+    const subject = this.subjects.find(
+      (item) => this.parseSubjectId(item.subjectId) === expectedId
+    );
+    if (!subject || subject.coefficient == null) return '-';
+    return Number(subject.coefficient).toFixed(2);
+  }
+
+  get selectedSubjectCoefficient(): string {
+    const selectedSubjectId = this.gradeForm.controls.subjectId.value;
+    if (!selectedSubjectId || Number(selectedSubjectId) <= 0) return '-';
+    return this.getSubjectCoefficient(Number(selectedSubjectId));
+  }
+
   loadPage(page: number): void {
-    if (page < 0 || page >= this.totalPages || page === this.currentPage) {
-      return;
-    }
+    if (page < 0 || page >= this.totalPages || page === this.currentPage) return;
     this.loadGrades(page);
   }
 
   get pages(): number[] {
-    const visiblePageCount = this.totalPages > 0 ? this.totalPages : (this.grades.length > 0 ? 1 : 0);
-    return Array.from({ length: visiblePageCount }, (_, index) => index);
+    const count = this.totalPages > 0 ? this.totalPages : this.grades.length > 0 ? 1 : 0;
+    return Array.from({ length: count }, (_, i) => i);
   }
 
   refreshAll(): void {
@@ -129,6 +152,50 @@ export class EtudiantGradeContentComponent implements OnInit {
     this.gradeForm.controls.studentId.disable();
     this.gradeForm.controls.subjectId.disable();
     this.isModalOpen = true;
+  }
+
+  get selectedStudentLabel(): string {
+    const id = Number(this.gradeForm.controls.studentId.value);
+    if (!id || id <= 0) return 'Choisir un étudiant';
+    const s = this.students.find((x) => Number(x.studentId) === id);
+    return s ? s.fullName : 'Choisir un étudiant';
+  }
+
+  get selectedSubjectLabel(): string {
+    const id = Number(this.gradeForm.controls.subjectId.value);
+    if (!id || id <= 0) return 'Choisir une matière';
+    const s = this.subjects.find((x) => this.parseSubjectId(x.subjectId) === id);
+    return s ? s.label : 'Choisir une matière';
+  }
+
+  toggleStudentDropdown(): void {
+    if (this.gradeForm.controls.studentId.disabled) return;
+    this.isStudentDropdownOpen = !this.isStudentDropdownOpen;
+    this.isSubjectDropdownOpen = false;
+  }
+
+  toggleSubjectDropdown(): void {
+    if (this.gradeForm.controls.subjectId.disabled) return;
+    this.isSubjectDropdownOpen = !this.isSubjectDropdownOpen;
+    this.isStudentDropdownOpen = false;
+  }
+
+  selectStudent(id: number): void {
+    this.gradeForm.patchValue({ studentId: id });
+    this.gradeForm.controls.studentId.markAsTouched();
+    this.isStudentDropdownOpen = false;
+  }
+
+  selectSubject(id: string | number): void {
+    const subjectId = typeof id === 'string' ? this.parseSubjectId(id) : id;
+    this.gradeForm.patchValue({ subjectId });
+    this.gradeForm.controls.subjectId.markAsTouched();
+    this.isSubjectDropdownOpen = false;
+  }
+
+  isSubjectActive(id: string | number): boolean {
+    const subjectId = typeof id === 'string' ? this.parseSubjectId(id) : id;
+    return this.gradeForm.controls.subjectId.value === subjectId;
   }
 
   closeModal(): void {
@@ -160,131 +227,183 @@ export class EtudiantGradeContentComponent implements OnInit {
     this.isSubmitting = true;
     this.modalErrorMessage = '';
 
-    if (this.editingGrade) {
-      this.gradeService
-        .updateGrade(this.editingGrade.studentId, this.editingGrade.subjectId, payload)
-        .subscribe({
-          next: () => this.onSubmitSuccess(),
-          error: (err: HttpErrorResponse) => this.onSubmitError(err),
-        });
-      return;
-    }
+    // ✅ FIX: finalize() garantit que isSubmitting repasse à false TOUJOURS
+    const request$ = this.editingGrade
+      ? this.gradeService.updateGrade(
+          this.editingGrade.studentId,
+          this.editingGrade.subjectId,
+          payload
+        )
+      : this.gradeService.createGrade(payload);
 
-    this.gradeService.createGrade(payload).subscribe({
-      next: () => this.onSubmitSuccess(),
-      error: (err: HttpErrorResponse) => this.onSubmitError(err),
-    });
+    request$
+      .pipe(
+        finalize(() => {
+          this.isSubmitting = false; // ✅ toujours exécuté, succès ou erreur
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: () => this.onSubmitSuccess(),
+        error: (err: HttpErrorResponse) => this.onSubmitError(err),
+      });
   }
 
   deleteGrade(grade: Grade): void {
     const confirmed = window.confirm(
-      `Supprimer la note de ${grade.studentName} en ${grade.subjectLabel} ?`,
+      `Supprimer la note de ${grade.studentName} en ${grade.subjectLabel} ?`
     );
     if (!confirmed) return;
 
-    this.gradeService.deleteGrade(grade.studentId, grade.subjectId).subscribe({
-      next: () => {
-    this.loadGrades(this.currentPage);
-        this.loadRefData();
-      },
-      error: () => {
-        this.gradesErrorMessage = 'Impossible de supprimer la note.';
-      },
-    });
+    this.gradeService
+      .deleteGrade(grade.studentId, grade.subjectId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.loadGrades(this.currentPage, false);
+          this.loadRefData();
+        },
+        error: () => {
+          this.gradesErrorMessage = 'Impossible de supprimer la note.';
+        },
+      });
   }
 
   private loadInitialData(): void {
-    this.loadingGrades = true;
+    this.refDataErrorMessage = '';
 
     forkJoin({
       studentStats: this.studentService.getStudentStats(),
       students: this.studentService.getStudents(0, 200),
       subjectsResponse: this.subjectService.getSubjects(0, 200),
-    }).subscribe({
-      next: ({ studentStats, students, subjectsResponse }) => {
-        this.totalStudents = Number(studentStats.totalStudents ?? 0);
-        this.globalAverage = Number(studentStats.globalAverage ?? 0);
-        this.students = Array.isArray(students.content) ? students.content : [];
+    })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: ({ studentStats, students, subjectsResponse }) => {
+          this.totalStudents = Number(studentStats.totalStudents ?? 0);
+          this.globalAverage = Number(studentStats.globalAverage ?? 0);
+          this.students = Array.isArray(students.content) ? students.content : [];
 
-        if (Array.isArray(subjectsResponse)) {
-          this.subjects = subjectsResponse;
-          this.totalSubjects = subjectsResponse.length;
-        } else {
-          this.subjects = Array.isArray(subjectsResponse.content)
-            ? subjectsResponse.content
-            : [];
-          this.totalSubjects = Number(
-            subjectsResponse.totalElements ?? this.subjects.length,
-          );
-        }
-      },
-      error: () => {
-        this.gradesErrorMessage = 'Impossible de charger les données de référence.';
-      },
-    });
+          if (Array.isArray(subjectsResponse)) {
+            this.subjects = subjectsResponse;
+            this.totalSubjects = subjectsResponse.length;
+          } else {
+            this.subjects = Array.isArray(subjectsResponse.content)
+              ? subjectsResponse.content
+              : [];
+            this.totalSubjects = Number(
+              subjectsResponse.totalElements ?? this.subjects.length
+            );
+          }
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.students = [];
+          this.subjects = [];
+          this.totalSubjects = 0;
+          this.refDataErrorMessage =
+            "Certaines données de référence n'ont pas pu être chargées.";
+          this.cdr.detectChanges();
+        },
+      });
 
+    // ✅ FIX: loadGrades gère son propre loadingGrades avec finalize
     this.loadGrades();
   }
 
   private loadRefData(): void {
+    this.refDataErrorMessage = '';
+
     forkJoin({
       studentStats: this.studentService.getStudentStats(),
       students: this.studentService.getStudents(0, 200),
       subjectsResponse: this.subjectService.getSubjects(0, 200),
-    }).subscribe({
-      next: ({ studentStats, students, subjectsResponse }) => {
-        this.totalStudents = Number(studentStats.totalStudents ?? 0);
-        this.globalAverage = Number(studentStats.globalAverage ?? 0);
-        this.students = Array.isArray(students.content) ? students.content : [];
+    })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: ({ studentStats, students, subjectsResponse }) => {
+          this.totalStudents = Number(studentStats.totalStudents ?? 0);
+          this.globalAverage = Number(studentStats.globalAverage ?? 0);
+          this.students = Array.isArray(students.content) ? students.content : [];
 
-        if (Array.isArray(subjectsResponse)) {
-          this.subjects = subjectsResponse;
-          this.totalSubjects = subjectsResponse.length;
-        } else {
-          this.subjects = Array.isArray(subjectsResponse.content)
-            ? subjectsResponse.content
-            : [];
-          this.totalSubjects = Number(
-            subjectsResponse.totalElements ?? this.subjects.length,
-          );
-        }
-      },
-    });
+          if (Array.isArray(subjectsResponse)) {
+            this.subjects = subjectsResponse;
+            this.totalSubjects = subjectsResponse.length;
+          } else {
+            this.subjects = Array.isArray(subjectsResponse.content)
+              ? subjectsResponse.content
+              : [];
+            this.totalSubjects = Number(
+              subjectsResponse.totalElements ?? this.subjects.length
+            );
+          }
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.refDataErrorMessage =
+            "Certaines données de référence n'ont pas pu être actualisées.";
+          this.cdr.detectChanges();
+        },
+      });
   }
 
-  private loadGrades(page: number = 0): void {
-    this.loadingGrades = true;
+  // ✅ FIX: finalize() garantit que loadingGrades repasse à false TOUJOURS
+  private loadGrades(page: number = 0, showLoader: boolean = true): void {
+    if (showLoader) {
+      this.loadingGrades = true;
+    }
     this.gradesErrorMessage = '';
 
-    this.gradeService.getGrades(page, this.pageSize).subscribe({
-      next: (response) => {
-        this.grades = Array.isArray(response.content) ? response.content : [];
-        this.currentPage = Number(response.number ?? 0);
-        this.totalPages = Number(response.totalPages ?? 0);
-        this.totalElements = Number(response.totalElements ?? 0);
-        this.loadingGrades = false;
-      },
-      error: () => {
-        this.grades = [];
-        this.loadingGrades = false;
-        this.gradesErrorMessage = 'Impossible de charger les notes.';
-      },
-    });
+    this.gradeService
+      .getGrades(page, this.pageSize)
+      .pipe(
+        finalize(() => {
+          this.loadingGrades = false; // ✅ toujours exécuté même si erreur réseau
+          this.cdr.detectChanges();
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: (response) => {
+          this.grades = Array.isArray(response.content) ? response.content : [];
+          this.currentPage = Number(response.number ?? 0);
+          this.totalPages = Number(response.totalPages ?? 0);
+          this.totalElements = Number(response.totalElements ?? 0);
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.grades = [];
+          this.gradesErrorMessage = 'Impossible de charger les notes.';
+          this.cdr.detectChanges();
+        },
+      });
   }
 
   private onSubmitSuccess(): void {
-    this.isSubmitting = false;
+    const wasEdit = !!this.editingGrade;
+
+    // isSubmitting est déjà géré par finalize()
     this.isModalOpen = false;
     this.editingGrade = null;
     this.gradeForm.controls.studentId.enable();
     this.gradeForm.controls.subjectId.enable();
-    this.loadGrades(this.currentPage);
+
+    this.successToastMessage = wasEdit
+      ? 'Note modifiée avec succès.'
+      : 'Note ajoutée avec succès.';
+    if (this.toastTimeoutId) {
+      clearTimeout(this.toastTimeoutId);
+    }
+    this.toastTimeoutId = setTimeout(() => {
+      this.successToastMessage = '';
+    }, 2600);
+
+    this.loadGrades(this.currentPage, false);
     this.loadRefData();
   }
 
   private onSubmitError(error: HttpErrorResponse): void {
-    this.isSubmitting = false;
-
+    // isSubmitting est déjà géré par finalize()
     if (error.status === 409) {
       this.modalErrorMessage =
         'Cette note existe déjà pour cet étudiant et cette matière.';
@@ -295,5 +414,31 @@ export class EtudiantGradeContentComponent implements OnInit {
       return;
     }
     this.modalErrorMessage = "Impossible d'enregistrer la note.";
+  }
+
+  private parseSubjectId(subjectId: string | number): number {
+    const normalized = String(subjectId ?? '').trim().toUpperCase();
+    const match = normalized.match(/^(?:MAT)?0*(\d+)$/);
+    if (!match) return Number.NaN;
+    return Number(match[1]);
+  }
+
+  formatStudentDisplayId(studentId: string | number): string {
+    const id = Number(studentId);
+    if (!Number.isFinite(id) || id <= 0) {
+      return String(studentId ?? '-');
+    }
+
+    return `ETU${this.studentCodeYear}${Math.trunc(id).toString().padStart(3, '0')}`;
+  }
+
+  formatSubjectDisplayId(subjectId: string | number): string {
+    const id = this.parseSubjectId(subjectId);
+    if (!Number.isFinite(id) || id <= 0) {
+      const fallback = String(subjectId ?? '').trim();
+      return fallback || '-';
+    }
+
+    return `MAT${Math.trunc(id).toString().padStart(3, '0')}`;
   }
 }

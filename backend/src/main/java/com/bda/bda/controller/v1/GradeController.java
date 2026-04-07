@@ -2,6 +2,7 @@ package com.bda.bda.controller.v1;
 
 import com.bda.bda.dto.request.GradeRequest;
 import com.bda.bda.dto.response.GradeResponse;
+import com.bda.bda.dto.response.PageResponse;
 import com.bda.bda.service.GradeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -25,7 +26,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Grades")
 public class GradeController {
-    private static final int PAGE_SIZE = 10;
+    private static final int PAGE_SIZE = 5;
 
     private final GradeService gradeService;
 
@@ -33,12 +34,14 @@ public class GradeController {
     @Operation(summary = "List grades")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Grades returned", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Page.class)))
     })
-    public ResponseEntity<Page<GradeResponse>> getAll(
+    public ResponseEntity<PageResponse<GradeResponse>> getAll(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "5") int size
     ) {
         int effectiveSize = size > 0 ? size : PAGE_SIZE;
-        return ResponseEntity.ok(gradeService.findAll(PageRequest.of(page, effectiveSize, Sort.by(Sort.Direction.DESC, "student.studentId"))));
+        return ResponseEntity.ok(PageResponse.from(
+                gradeService.findAll(PageRequest.of(page, effectiveSize, Sort.by(Sort.Direction.DESC, "student.studentId")))
+        ));
     }
 
     @GetMapping("/student/{studentId}")

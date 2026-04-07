@@ -72,7 +72,7 @@ public class GradeService {
         dbUserContext.propagate();
         Grade grade = getOrThrow(studentId, subjectId);
         grade.setValue(request.value());
-        return toResponse(gradeRepository.save(grade));
+        return toResponse(grade);
     }
 
     @Transactional
