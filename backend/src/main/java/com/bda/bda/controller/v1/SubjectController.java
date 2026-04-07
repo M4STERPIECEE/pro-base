@@ -1,6 +1,7 @@
 package com.bda.bda.controller.v1;
 
 import com.bda.bda.dto.request.SubjectRequest;
+import com.bda.bda.dto.response.PageResponse;
 import com.bda.bda.dto.response.SubjectResponse;
 import com.bda.bda.dto.response.SubjectStatsResponse;
 import com.bda.bda.service.SubjectService;
@@ -12,7 +13,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -33,18 +33,18 @@ public class SubjectController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Subjects returned", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = SubjectResponse.class))))
     })
-    public ResponseEntity<Page<SubjectResponse>> getAll(
+        public ResponseEntity<PageResponse<SubjectResponse>> getAll(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
             @RequestParam(defaultValue = "") String search,
             @RequestParam(required = false) BigDecimal minCoefficient
     ) {
         int effectiveSize = size > 0 ? size : PAGE_SIZE;
-        return ResponseEntity.ok(subjectService.findAll(
+                return ResponseEntity.ok(PageResponse.from(subjectService.findAll(
                 PageRequest.of(page, effectiveSize, Sort.by(Sort.Direction.DESC, "subjectId")),
                 search,
                 minCoefficient
-        ));
+                )));
     }
 
     @GetMapping("/stats")

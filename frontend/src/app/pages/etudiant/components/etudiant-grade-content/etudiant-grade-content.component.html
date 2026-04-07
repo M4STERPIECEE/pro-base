@@ -1,5 +1,4 @@
 <main class="grades-page px-8 pb-14 pt-5">
-  <!-- ── Header ── -->
   <div class="page-header mb-5 flex flex-col justify-between gap-6 md:flex-row md:items-end">
     <div>
       <nav class="breadcrumb mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest">
@@ -10,17 +9,11 @@
       <h2 class="page-title">Gestion des Notes</h2>
       <p class="page-subtitle">Insertion, modification et suppression des notes étudiants.</p>
     </div>
-    <button class="btn-primary" type="button" (click)="openCreateModal()">
-      <span class="material-symbols-outlined">post_add</span>
-      Ajouter une note
-    </button>
   </div>
-
-  <!-- ── KPI Cards ── -->
   <div class="mb-5 grid grid-cols-1 gap-5 md:grid-cols-4">
     <div class="kpi-card">
       <p class="kpi-label">Total Notes</p>
-      <h3 class="kpi-value">{{ totalElements }}</h3>
+      <h3 class="kpi-value">{{ grades.length }}</h3>
     </div>
     <div class="kpi-card">
       <p class="kpi-label">Moyenne Globale</p>
@@ -35,16 +28,10 @@
       <h3 class="kpi-value">{{ totalSubjects }}</h3>
     </div>
   </div>
-
-  <!-- ── Notes Table ── -->
   <section class="table-card">
     <div class="table-toolbar">
       <p class="toolbar-title">Table des notes</p>
       <div class="toolbar-actions flex items-center gap-3">
-        <button class="btn-primary" type="button" (click)="openCreateModal()">
-          <span class="material-symbols-outlined">post_add</span>
-          Ajouter
-        </button>
         <div class="search-wrap">
           <span class="material-symbols-outlined search-icon">search</span>
           <input
@@ -54,13 +41,12 @@
             [value]="searchTerm"
             (input)="onSearchChange(($any($event.target).value ?? '').toString())" />
         </div>
-        <button
-          class="refresh-btn"
-          type="button"
-          (click)="refreshAll()"
-          [disabled]="loadingGrades"
-          title="Actualiser">
+        <button class="refresh-btn" type="button" (click)="refreshAll()" [disabled]="loadingGrades" title="Actualiser">
           <span class="material-symbols-outlined">refresh</span>
+        </button>
+        <button class="btn-primary" type="button" (click)="openCreateModal()">
+          <span class="material-symbols-outlined">post_add</span>
+          Ajouter une note
         </button>
       </div>
     </div>
@@ -73,21 +59,21 @@
             <th>Nom</th>
             <th>N° Matière</th>
             <th>Désignation</th>
+            <th class="text-center">Coef</th>
             <th class="text-center">Note /20</th>
             <th class="text-right">Actions</th>
           </tr>
         </thead>
-
-        <!-- Data rows -->
         <tbody *ngIf="!loadingGrades && !gradesErrorMessage">
           <tr
             *ngFor="let grade of displayedGrades; let i = index"
             class="data-row"
             [style.animation-delay]="i * 30 + 'ms'">
-            <td><span class="student-id">{{ grade.studentId }}</span></td>
+            <td><span class="student-id">{{ formatStudentDisplayId(grade.studentId) }}</span></td>
             <td>{{ grade.studentName }}</td>
-            <td>{{ grade.subjectId }}</td>
+            <td>{{ formatSubjectDisplayId(grade.subjectId) }}</td>
             <td>{{ grade.subjectLabel }}</td>
+            <td class="text-center">{{ getSubjectCoefficient(grade.subjectId) }}</td>
             <td class="text-center">
               <span
                 class="avg-badge"
@@ -98,30 +84,22 @@
             </td>
             <td class="text-right">
               <div class="row-actions">
-                <button
-                  class="action-btn action-edit"
-                  type="button"
-                  title="Modifier"
-                  (click)="openEditModal(grade)">
+                <button class="action-btn action-edit" type="button" title="Modifier" (click)="openEditModal(grade)">
                   <span class="material-symbols-outlined">edit</span>
                 </button>
-                <button
-                  class="action-btn action-delete"
-                  type="button"
-                  title="Supprimer"
-                  (click)="deleteGrade(grade)">
+                <button class="action-btn action-delete" type="button" title="Supprimer" (click)="deleteGrade(grade)">
                   <span class="material-symbols-outlined">delete</span>
                 </button>
               </div>
             </td>
           </tr>
           <tr *ngIf="displayedGrades.length === 0">
-            <td class="state-cell" colspan="6">Aucune note trouvée.</td>
+            <td class="state-cell" colspan="7">Aucune note trouvée.</td>
           </tr>
         </tbody>
         <tbody *ngIf="loadingGrades">
           <tr>
-            <td class="state-cell" colspan="6">
+            <td class="state-cell" colspan="7">
               <div class="loading-wrap">
                 <span class="loading-spinner"></span>
                 Chargement des notes...
@@ -131,7 +109,7 @@
         </tbody>
         <tbody *ngIf="!loadingGrades && gradesErrorMessage">
           <tr>
-            <td class="state-cell error-cell" colspan="6">
+            <td class="state-cell error-cell" colspan="7">
               <span class="material-symbols-outlined">error</span>
               {{ gradesErrorMessage }}
             </td>
@@ -144,34 +122,9 @@
         {{ displayedGrades.length }} note(s) affichée(s)
         <span *ngIf="searchTerm"> — filtrée(s) sur « {{ searchTerm }} »</span>
       </p>
-      <div class="pagination" *ngIf="totalPages > 1">
-        <button
-          type="button"
-          class="page-btn"
-          [disabled]="currentPage === 0"
-          (click)="loadPage(currentPage - 1)">
-          <span class="material-symbols-outlined">chevron_left</span>
-        </button>
-        <button
-          *ngFor="let page of pages"
-          type="button"
-          class="page-btn"
-          [class.active]="page === currentPage"
-          (click)="loadPage(page)">
-          {{ page + 1 }}
-        </button>
-        <button
-          type="button"
-          class="page-btn"
-          [disabled]="currentPage >= totalPages - 1"
-          (click)="loadPage(currentPage + 1)">
-          <span class="material-symbols-outlined">chevron_right</span>
-        </button>
-      </div>
     </div>
   </section>
   <div *ngIf="isModalOpen" class="modal-backdrop" (click)="closeModal()">
-    <div class="modal-backdrop-overlay"></div>
     <div class="modal-card" role="dialog" aria-modal="true" [attr.aria-label]="editingGrade ? 'Modifier une note' : 'Ajouter une note'" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>{{ editingGrade ? 'Modifier une note' : 'Ajouter une note' }}</h3>
@@ -181,25 +134,53 @@
       </div>
       <form [formGroup]="gradeForm" (ngSubmit)="submitGrade()" class="modal-form">
         <label for="studentId" class="modal-label">Étudiant</label>
-        <select id="studentId" class="modal-input" formControlName="studentId" [class.modal-input-error]="gradeForm.controls.studentId.invalid && gradeForm.controls.studentId.touched">
-          <option [ngValue]="0" disabled>Choisir un étudiant</option>
-          <option *ngFor="let student of students" [ngValue]="student.studentId">
-            {{ student.fullName }}
-          </option>
-        </select>
+        <div class="custom-dropdown">
+          <button type="button" class="modal-input dropdown-trigger" [class.modal-input-error]="gradeForm.controls.studentId.invalid && gradeForm.controls.studentId.touched" [class.modal-input-disabled]="gradeForm.controls.studentId.disabled" (click)="toggleStudentDropdown()">
+            <span>{{ selectedStudentLabel }}</span>
+            <span class="material-symbols-outlined" [class.rotated]="isStudentDropdownOpen">expand_more</span>
+          </button>
+          <div *ngIf="isStudentDropdownOpen" class="dropdown-panel">
+            <button *ngFor="let student of students" type="button" class="dropdown-option" [class.active]="gradeForm.controls.studentId.value === student.studentId" (click)="selectStudent(student.studentId)">
+              {{ student.fullName }}
+            </button>
+          </div>
+        </div>
         <p *ngIf="gradeForm.controls.studentId.invalid && gradeForm.controls.studentId.touched" class="modal-error">
           Veuillez sélectionner un étudiant.
         </p>
         <label for="subjectId" class="modal-label">Matière</label>
-        <select id="subjectId" class="modal-input" formControlName="subjectId" [class.modal-input-error]="gradeForm.controls.subjectId.invalid && gradeForm.controls.subjectId.touched">
-          <option [ngValue]="0" disabled>Choisir une matière</option>
-          <option *ngFor="let subject of subjects" [ngValue]="subject.subjectId">
-            {{ subject.label }}
-          </option>
-        </select>
+        <div class="custom-dropdown">
+          <button
+            type="button"
+            class="modal-input dropdown-trigger"
+            [class.modal-input-error]="gradeForm.controls.subjectId.invalid && gradeForm.controls.subjectId.touched"
+            [class.modal-input-disabled]="gradeForm.controls.subjectId.disabled"
+            (click)="toggleSubjectDropdown()">
+            <span>{{ selectedSubjectLabel }}</span>
+            <span class="material-symbols-outlined" [class.rotated]="isSubjectDropdownOpen">expand_more</span>
+          </button>
+          <div *ngIf="isSubjectDropdownOpen" class="dropdown-panel">
+            <button
+              *ngFor="let subject of subjects"
+              type="button"
+              class="dropdown-option"
+              [class.active]="isSubjectActive(subject.subjectId)"
+              (click)="selectSubject(subject.subjectId)">
+              {{ subject.label }}
+            </button>
+          </div>
+        </div>
         <p *ngIf="gradeForm.controls.subjectId.invalid && gradeForm.controls.subjectId.touched" class="modal-error">
           Veuillez sélectionner une matière.
         </p>
+
+        <label for="subjectCoefficient" class="modal-label">Coefficient</label>
+        <input
+          id="subjectCoefficient"
+          class="modal-input modal-input-readonly"
+          type="text"
+          [value]="selectedSubjectCoefficient"
+          readonly />
         <label for="value" class="modal-label">Note (/20)</label>
         <input id="value" class="modal-input" formControlName="value" type="number" min="0" max="20" step="0.01" placeholder="Ex : 14.50" [class.modal-input-error]="gradeForm.controls.value.invalid && gradeForm.controls.value.touched" />
         <p *ngIf="gradeForm.controls.value.invalid && gradeForm.controls.value.touched" class="modal-error">
@@ -218,5 +199,10 @@
         </div>
       </form>
     </div>
+  </div>
+
+  <div *ngIf="successToastMessage" class="toast-success" role="status" aria-live="polite">
+    <span class="material-symbols-outlined">check_circle</span>
+    <span>{{ successToastMessage }}</span>
   </div>
 </main>

@@ -57,13 +57,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/v1/grades/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/v1/students/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/v1/subjects/**").authenticated()
-                        .requestMatchers("/v1/grades/**").hasAnyRole("USER", "ETUDIANT", "ADMIN")
-                        .requestMatchers("/v1/students/**").hasAnyRole("USER", "ETUDIANT", "ADMIN")
-                        .requestMatchers("/v1/subjects/**").hasAnyRole("USER", "ETUDIANT", "ADMIN")
+                        .requestMatchers("/v1/grades/**").hasAnyRole("USER", "GESTIONNAIRE", "ETUDIANT", "ADMIN")
+                        .requestMatchers("/v1/students/**").hasAnyRole("USER", "GESTIONNAIRE", "ETUDIANT", "ADMIN")
+                        .requestMatchers("/v1/subjects/**").hasAnyRole("USER", "GESTIONNAIRE", "ETUDIANT", "ADMIN")
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider()).addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-
         return http.build();
     }
 }
