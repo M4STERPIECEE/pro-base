@@ -24,7 +24,7 @@ interface GradeFormValue {
 })
 export class EtudiantGradeContentComponent implements OnInit, OnDestroy {
   readonly gradeForm;
-  readonly pageSize = 10;
+  readonly pageSize = 5;
   readonly studentCodeYear = new Date().getFullYear();
 
   grades: Grade[] = [];

@@ -26,7 +26,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Grades")
 public class GradeController {
-    private static final int PAGE_SIZE = 10;
+    private static final int PAGE_SIZE = 5;
 
     private final GradeService gradeService;
 
@@ -36,7 +36,7 @@ public class GradeController {
     })
     public ResponseEntity<PageResponse<GradeResponse>> getAll(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "5") int size
     ) {
         int effectiveSize = size > 0 ? size : PAGE_SIZE;
         return ResponseEntity.ok(PageResponse.from(

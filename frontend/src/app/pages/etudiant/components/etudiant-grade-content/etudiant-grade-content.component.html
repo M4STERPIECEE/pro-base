@@ -122,6 +122,30 @@
         {{ displayedGrades.length }} note(s) affichée(s)
         <span *ngIf="searchTerm"> — filtrée(s) sur « {{ searchTerm }} »</span>
       </p>
+      <div class="pagination" *ngIf="totalPages > 1 && !searchTerm">
+        <button
+          type="button"
+          class="page-btn"
+          [disabled]="currentPage === 0"
+          (click)="loadPage(currentPage - 1)">
+          <span class="material-symbols-outlined">chevron_left</span>
+        </button>
+        <button
+          *ngFor="let page of pages"
+          type="button"
+          class="page-btn"
+          [class.active]="page === currentPage"
+          (click)="loadPage(page)">
+          {{ page + 1 }}
+        </button>
+        <button
+          type="button"
+          class="page-btn"
+          [disabled]="currentPage >= totalPages - 1"
+          (click)="loadPage(currentPage + 1)">
+          <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+      </div>
     </div>
   </section>
   <div *ngIf="isModalOpen" class="modal-backdrop" (click)="closeModal()">
