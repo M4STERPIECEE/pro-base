@@ -194,7 +194,46 @@
         </span>
         <span class="footer-sep">|</span>
         <span class="footer-stat">
-          Total : <strong>{{ displayedEntries.length }}</strong> affiché(s)
+          Affichés (page) : <strong>{{ displayedEntries.length }}</strong>
+        </span>
+        <span class="footer-sep">|</span>
+        <span class="footer-stat">
+          Total : <strong>{{ totalElements }}</strong>
+        </span>
+      </div>
+
+      <div class="footer-pagination" *ngIf="totalPages > 1">
+        <button
+          class="page-btn"
+          type="button"
+          (click)="previousPage()"
+          [disabled]="loading || currentPage === 0"
+          aria-label="Page précédente">
+          <span class="material-symbols-outlined">chevron_left</span>
+        </button>
+
+        <button
+          *ngFor="let page of pageNumbers"
+          class="page-btn"
+          [class.page-btn-active]="page === currentPage"
+          type="button"
+          (click)="goToPage(page)"
+          [disabled]="loading"
+          [attr.aria-label]="'Page ' + (page + 1)">
+          {{ page + 1 }}
+        </button>
+
+        <button
+          class="page-btn"
+          type="button"
+          (click)="nextPage()"
+          [disabled]="loading || currentPage >= totalPages - 1"
+          aria-label="Page suivante">
+          <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+
+        <span class="page-summary">
+          Page {{ totalPages === 0 ? 0 : currentPage + 1 }} / {{ totalPages }}
         </span>
       </div>
     </div>

@@ -2,6 +2,7 @@ package com.bda.bda.controller.v1;
 
 import com.bda.bda.dto.response.AuditResponse;
 import com.bda.bda.dto.response.AuditStatsResponse;
+import com.bda.bda.dto.response.PageResponse;
 import com.bda.bda.service.AuditService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -11,6 +12,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -20,18 +23,26 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Audit")
 public class AuditController {
+    private static final int PAGE_SIZE = 6;
+
     private final AuditService auditService;
 
     @GetMapping
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Audit entries returned", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = AuditResponse.class))))
+            @ApiResponse(responseCode = "200", description = "Audit entries returned", content = @Content(mediaType = "application/json", schema = @Schema(implementation = PageResponse.class)))
     })
-    public ResponseEntity<List<AuditResponse>> getAll(@Parameter(description = "Filter by operation type: INSERT, UPDATE or DELETE") @RequestParam(required = false) String type) {
+    public ResponseEntity<PageResponse<AuditResponse>> getAll(
+            @Parameter(description = "Filter by operation type: INSERT, UPDATE or DELETE") @RequestParam(required = false) String type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size
+    ) {
+        int effectiveSize = size > 0 ? size : PAGE_SIZE;
+        PageRequest pageable = PageRequest.of(page, effectiveSize, Sort.by(Sort.Direction.DESC, "updatedAt"));
 
         if (type != null && !type.isBlank()) {
-            return ResponseEntity.ok(auditService.findByType(type.toUpperCase()));
+            return ResponseEntity.ok(PageResponse.from(auditService.findByType(type.toUpperCase(), pageable)));
         }
-        return ResponseEntity.ok(auditService.findAll());
+        return ResponseEntity.ok(PageResponse.from(auditService.findAll(pageable)));
     }
 
     @GetMapping("/student/{studentId}")

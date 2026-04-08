@@ -329,6 +329,11 @@
   padding: 0.9rem 1.4rem;
   border-top: 1px solid #f0eeff;
   background: #fcfbff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
 }
 .footer-stats {
   display: flex;
@@ -345,6 +350,56 @@
   gap: 0.3rem;
 }
 .footer-sep { color: #c3c0e0; font-size: 0.9rem; }
+
+.footer-pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.page-btn {
+  min-width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid #ddd8ff;
+  background: #ffffff;
+  color: #5d5a83;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.83rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.page-btn .material-symbols-outlined {
+  font-size: 1rem;
+}
+
+.page-btn:hover {
+  background: #f5f3ff;
+  border-color: #cfc8ff;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-btn-active {
+  background: #5b51f8;
+  border-color: #5b51f8;
+  color: #ffffff;
+}
+
+.page-summary {
+  margin-left: 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b6987;
+}
 
 .stat-dot {
   display: inline-block;
@@ -371,4 +426,5 @@
   .audit-page { padding-left: 1rem; padding-right: 1rem; }
   .search-input { min-width: 160px; }
   .toolbar-actions { gap: 0.4rem; }
+  .table-footer { flex-direction: column; align-items: flex-start; }
 }
