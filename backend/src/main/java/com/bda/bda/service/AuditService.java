@@ -7,6 +7,8 @@ import com.bda.bda.model.AuditGrade;
 import com.bda.bda.repository.AuditGradeRepository;
 import com.bda.bda.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -18,6 +20,14 @@ public class AuditService {
 
     private final AuditGradeRepository auditGradeRepository;
     private final StudentRepository    studentRepository;
+
+    public Page<AuditResponse> findAll(Pageable pageable) {
+        return auditGradeRepository.findAllByOrderByUpdatedAtDesc(pageable).map(this::toResponse);
+    }
+
+    public Page<AuditResponse> findByType(String operationType, Pageable pageable) {
+        return auditGradeRepository.findByOperationTypeOrderByUpdatedAtDesc(operationType, pageable).map(this::toResponse);
+    }
 
     public List<AuditResponse> findAll() {
         return auditGradeRepository.findAllByOrderByUpdatedAtDesc().stream().map(this::toResponse).toList();

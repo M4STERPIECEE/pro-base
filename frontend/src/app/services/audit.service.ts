@@ -4,6 +4,14 @@ import { Observable } from 'rxjs';
 import { API_ENDPOINTS } from '../utils/api-config';
 import { AuditEntry, AuditStats } from '../models/audit.model';
 
+interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuditService {
   private readonly apiUrl = API_ENDPOINTS.audit.list;
@@ -11,14 +19,18 @@ export class AuditService {
 
   constructor(private readonly http: HttpClient) {}
 
-  getAuditEntries(operationType?: string): Observable<AuditEntry[]> {
+  getAuditEntries(page = 0, size = 6, operationType?: string): Observable<PageResponse<AuditEntry>> {
     const uniqueTs = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    let params = new HttpParams().set('_ts', uniqueTs);
+    let params = new HttpParams()
+      .set('_ts', uniqueTs)
+      .set('page', page.toString())
+      .set('size', size.toString());
+
     if (operationType) {
       params = params.set('type', operationType);
     }
 
-    return this.http.get<AuditEntry[]>(this.apiUrl, {
+    return this.http.get<PageResponse<AuditEntry>>(this.apiUrl, {
       params,
       headers: this.buildAuthHeaders(),
     });
